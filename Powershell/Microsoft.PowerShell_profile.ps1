@@ -15,8 +15,8 @@ Set-PSReadLineOption -PredictionSource HistoryAndPlugin -PredictionViewStyle Lis
 Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
 
 #for posh predictive text
-Set-PredictiveTextOption -RemoveCondaTabExpansion
-Install-PredictiveText
+#Set-PredictiveTextOption -RemoveCondaTabExpansion
+#Install-PredictiveText
 
 #Fzf
 Import-Module PSFzf
@@ -25,13 +25,87 @@ Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+f' -PSReadlineChordReverseHistory
 #Alias
 Set-Alias vim nvim
 Set-Alias vi nvim
-Set-Alias ll ls
 Set-Alias g git
-Set-Alias grep findstr
+#Set-Alias grep findstr
 Set-Alias tig 'C:\Program Files\Git\usr\bin\tig.exe'
 Set-Alias less 'C:\Program Files\Git\usr\bin\less.exe'
+Set-Alias gitconfig 'git config --global user.email "sweetbabyalaska@gmail.com" && git config --global user.name "sweetbbak"'
 
+
+function ll {
+    Get-ChildItem | Format-Wide -column 3
+}
+function dirs
+{
+    if ($args.Count -gt 0)
+    {
+        Get-ChildItem -Recurse -Include "$args" | Foreach-Object FullName
+    }dir
+    else
+    {
+        Get-ChildItem -Recurse | Foreach-Object FullName
+    }
+}
+function df {
+        get-volume
+}
+function sedx($file, $find, $replace){
+        (Get-Content $file).replace("$find", $replace) | Set-Content $file
+}
+function which($name) {
+        Get-Command $name | Select-Object -ExpandProperty Definition
+}
+function export($name, $value) {
+        set-item -force -path "env:$name" -value $value;
+}
+function pkill($name) {
+        Get-Process $name -ErrorAction SilentlyContinue | Stop-Process
+}
+function pgrep($name) {
+        Get-Process $name
+}
+
+function find-file($name) {
+        Get-ChildItem -recurse -filter "*${name}*" -ErrorAction SilentlyContinue | ForEach-Object {
+                $place_path = $_.directory
+                Write-Output "${place_path}\${_}"
+        }
+}
+function unzip ($file) {
+        Write-Output("Extracting", $file, "to", $pwd)
+	$fullFile = Get-ChildItem -Path $pwd -Filter .\cove.zip | ForEach-Object{$_.FullName}
+        Expand-Archive -Path $fullFile -DestinationPath $pwd
+}
+function grepx($regex, $dir) {
+        if ( $dir ) {
+                Get-ChildItem $dir | select-string $regex
+                return
+        }
+        $input | select-string $regex
+}
+# https://stackoverflow.com/questions/36428949/whats-the-equivalent-of-xargs-in-powershell
+filter xargs { & $args[0] ($args[1..$args.length] + $_) } ## adds basic xargs execution good for piping
+function env { 
+    filter xargs { & $args[0] ($args[1..$args.length] + $_) }
+    Get-ChildItem env: | gum choose --no-limit | set-clipboard 
+}
+
+function path-gum {
+    $env:path | split ";" | gum choose --no-limit
+}
 #Functions
+function lscolors {
+    $colors = [enum]::GetValues([System.ConsoleColor])
+    Foreach ($bgcolor in $colors){
+        Foreach ($fgcolor in $colors) {Write-Host "$fgcolor|" -ForegroundColor $fgcolor -BackgroundColor $bgcolor -NoNewline }
+        Write-Host " on $bgcolor"
+    }
+}
+function rung {
+   $list = Get-ChildItem *.exe && dir *.go && dir *.sh && dir *.ps1 && dir *.py
+   $gum = Invoke-Expression "gum choose --no-limit $list"
+   echo $gum
+}
 
 function charm {
     Param($cats)
@@ -42,13 +116,6 @@ function eip {
     curl -s http://ifconfig.me
 }
 #change dir to nvim config file
-function config/nvim {
-Set-Location 'C:\Users\User\AppData\Local\nvim' #this is equivalent to ~./config/nvim
-}
-
-function config/nvimdata {
-    Set-Location 'C:\Users\User\AppData\Local\nvim'
-    }
 
 #which
 function which ($command) {
@@ -78,14 +145,6 @@ Set-PSReadLineKeyHandler -Chord '"',"'" `
         [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($cursor - 1)
     }
 }
-
-# Create Menu of Directories to select from, uses PSmenu module
-function cdx {
-     $dir = menu (Invoke-Expression "dir -dir")
-     Invoke-Expression "cd $dir"
-     }
-
-# powershell completion for oh-my-posh                           -*- shell-script -*-
 
 function __oh-my-posh_debug {
     if ($env:BASH_COMP_DEBUG_FILE) {
